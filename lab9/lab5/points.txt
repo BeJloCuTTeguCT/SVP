@@ -1,0 +1,6 @@
+0 0 Point1
+100 0 Point2
+200 100 Point3
+300 300 Point4
+100 400 Point5
+0 450 Point6
