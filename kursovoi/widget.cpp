@@ -58,12 +58,12 @@ Widget::Widget(QWidget *parent)
     pcmbbox_filter->addItems(this->_nameColums);
     connect(pcmbbox_filter, &QComboBox::activated, this, &Widget::sort);
 
-    QMenu *pmenuFile = new QMenu(tr("&Файл"), pmenuBar);
-    QMenu *pmenuHelp = new QMenu(tr("&Справка"), pmenuBar);
-    QAction *pOpenBD = pmenuFile->addAction(tr("Открыть &БД услуг"));
+    QMenu *pmenuFile = new QMenu("&Файл", pmenuBar);
+    QMenu *pmenuHelp = new QMenu("&Справка", pmenuBar);
+    QAction *pOpenBD = pmenuFile->addAction("Открыть &БД услуг");
     pOpenBD->setShortcut(Qt::CTRL | Qt::Key_O);
     pmenuFile->addSeparator();
-    QAction *pEditModeAction = pmenuFile->addAction(QPixmap(":/images/editICO"), "&Режим Редактирования");
+    pEditModeAction = pmenuFile->addAction(QPixmap(":/images/editICO"), "&Режим Редактирования");
     pEditModeAction->setShortcut(Qt::CTRL | Qt::Key_E);
     pEditModeAction->setCheckable(true);
     pEditModeAction->setChecked(false);
@@ -82,6 +82,7 @@ Widget::Widget(QWidget *parent)
     pClModeAction = pmenuFile->addAction(QPixmap(":/images/resetICO"), "Отменить и&змения");
     pClModeAction->setShortcut(Qt::CTRL | Qt::Key_Z);
     pClModeAction->setDisabled(true);
+    QAction *pProgAction = pmenuHelp->addAction(tr("О &Программе"));
     connect(pUpdMenuAction, &QAction::triggered, this, &Widget::loadTable);
     connect(pOpenBD, &QAction::triggered, this, &Widget::onClickedMenuOpenBD);
     connect(pEditModeAction, &QAction::triggered, this, &Widget::onClickedMenuRedact);
@@ -89,11 +90,18 @@ Widget::Widget(QWidget *parent)
     connect(pRmModeAction, &QAction::triggered, this, &Widget::onClickedMenuRm);
     connect(pSaveModeAction, &QAction::triggered, this, &Widget::onClickedMenuSave);
     connect(pClModeAction, &QAction::triggered,this, &Widget::onClickedMenuCl);
-    pmenuHelp->addAction(tr("О &Программе"));
+    connect(pProgAction, &QAction::triggered, this, &Widget::onClickedOProgramme);
+
     pmenuBar->addMenu(pmenuFile);
     pmenuBar->addMenu(pmenuHelp);
 
     this->loadTable();
+
+    this->_path_to_database = QDir::currentPath() + "\\database.json";
+    QFile file(_path_to_database);
+    file.open(QIODevice::WriteOnly);
+    file.close();
+    this->saveData();
 
     this->setWindowTitle("Список медицинских услуг");
     this->setLayout(pvbxlayout);
@@ -130,6 +138,36 @@ void Widget::sort(int index)
     this->sortFunc();
 }
 
+void Widget::onClickedOProgramme()
+{
+    this->_pWgtOProgramme = new QDialog;
+    QHBoxLayout *pMainlayout = new QHBoxLayout;
+    QVBoxLayout *pLayout = new QVBoxLayout;
+    QHBoxLayout *pLayoutBtn = new QHBoxLayout;
+    QLabel *pLabel1 = new QLabel("Список медицинских услуг v0.0.1");
+    QLabel *pLabel2 = new QLabel("Программа собрана 06.12.2022");
+    QLabel *pLabel3 = new QLabel("Основана на Qt 6.2.2 (MinGW 9.0, 64 бита)");
+    QPushButton *pPhBtn = new QPushButton("Закрыть");
+    _pWgtOProgramme->setWindowTitle("О Программе список медицинских услуг");
+    _pWgtOProgramme->setFixedSize(350, 200);
+    _pWgtOProgramme->setLayout(pMainlayout);
+    pMainlayout->addLayout(pLayout);
+    pLayout->addWidget(pLabel1);
+    pLayout->addWidget(pLabel2);
+    pLayout->addWidget(pLabel3);
+    pLayout->addLayout(pLayoutBtn);
+    pLabel1->setStyleSheet("font-weight: bold");
+    pLayoutBtn->addStretch(1);
+    pLayoutBtn->addWidget(pPhBtn);
+    connect(pPhBtn, &QPushButton::clicked, this, &Widget::onClickedCloseOProgramme);
+    _pWgtOProgramme->show();
+}
+
+void Widget::onClickedCloseOProgramme()
+{
+    delete this->_pWgtOProgramme;
+}
+
 Widget::~Widget()
 {
     delete this->_service;
@@ -156,6 +194,8 @@ void Widget::onClickedMenuRedact(bool checked)
     if(checked)
     {
         this->_changed = true;
+        this->pSaveModeAction->setEnabled(true);
+        this->pClModeAction->setEnabled(true);
         this->_ptable->setEditTriggers(QAbstractItemView::AllEditTriggers);
         this->_ptable->verticalHeader()->setVisible(true);
     }
@@ -174,6 +214,12 @@ void Widget::onClickedMenuAdd()
     this->_ptable->verticalHeader()->setVisible(true);
     for(int i = 0; i < this->_nameColums.size(); ++i)
         this->_ptable->setItem(this->_ptable->rowCount()-1, i, new QTableWidgetItem(""));
+    if(pRmModeAction->isChecked())
+    {
+        QPushButton *phbtnRm = new QPushButton(QPixmap(":/images/removeICO"), "");
+        this->_ptable->setIndexWidget(this->_ptable->model()->index(this->_ptable->rowCount()-1, this->_ptable->columnCount()-1), phbtnRm);
+        connect(phbtnRm, &QPushButton::clicked, this, &Widget::onClickedBtnRm);
+    }
     this->_changed = true;
     this->pSaveModeAction->setEnabled(true);
     this->pClModeAction->setEnabled(true);
@@ -242,12 +288,12 @@ void Widget::onClickedMenuSave()
         bool isInt7;
         int tempInt =-1;
         tempInt = this->_ptable->itemFromIndex(this->_ptable->model()->index(i, 2))->text().toInt(&isInt7, 10);
-        if(isInt7)
+        if(isInt7 && tempInt >=0)
             this->_cost->append(tempInt);
         else
             vErrorsItemsPts.append(QPoint(2, i));
         tempInt = this->_ptable->itemFromIndex(this->_ptable->model()->index(i, 3))->text().toInt(&isInt7, 10);
-        if(isInt7)
+        if(isInt7 && tempInt >=0)
             this->_time->append(tempInt);
         else
             vErrorsItemsPts.append(QPoint(3, i));
@@ -257,7 +303,7 @@ void Widget::onClickedMenuSave()
     if(vErrorsItemsPts.size() != 0 )
     {
         QString textForErrorMess("Ошибка формата данных - требуются символы в первых двух столбцах,"
-                                 "\nцифры в двух последих! Ошибка");
+                                 "\nне отрицательные цифры в двух последних! Ошибка");
         for (int i = 0; i < vErrorsItemsPts.size(); ++i)
             textForErrorMess.append("\nв столбце " + this->_nameColums.value(vErrorsItemsPts.value(i).x()) + " и "
                                     + QString::number(vErrorsItemsPts.value(i).y() + 1) + " строке");
@@ -268,7 +314,7 @@ void Widget::onClickedMenuSave()
         else
             QMessageBox::critical(this, "Список медицинских услуг",
                                   "Ошибка формата данных - требуются символы в первых двух столбцах,"
-                                  "\nцифры в двух последих! Количество ошибок - более 44",
+                                  "\nне отрицательные цифры в двух последних! Количество ошибок - более 44",
                                         QMessageBox::Ok, QMessageBox::Ok);
         this->getData();
         return;
@@ -277,6 +323,7 @@ void Widget::onClickedMenuSave()
     this->_changed = false;
     this->pSaveModeAction->setDisabled(true);
     this->pClModeAction->setDisabled(true);
+    this->pEditModeAction->setChecked(false);
     this->_ptable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     this->_ptable->verticalHeader()->setVisible(false);
 
@@ -303,63 +350,6 @@ void Widget::onClickedMenuCl()
     }
 
     this->_ptable->verticalHeader()->setVisible(false);
-    this->reloadTable();
-}
-
-void Widget::onClickedRedactRow()
-{
-    int selectRow = this->_ptable->currentRow();
-    if(this->_ptable->item(selectRow, 0)->flags().testFlag(Qt::ItemIsSelectable))
-    {
-        this->_ptable->setEditTriggers(QAbstractItemView::AllEditTriggers);
-        this->_ptable->setSelectionBehavior(QAbstractItemView::SelectItems);
-        this->_ptable->setSelectionMode(QAbstractItemView::SingleSelection);
-        for(int i = 0; i < this->_ptable->columnCount()-1; ++i)
-        {
-            QList<QString> data({_service->value(selectRow), _specialist->value(selectRow), QString::number(_cost->value(selectRow)), QString::number(_time->value(selectRow))});
-            QTableWidgetItem *item = this->_ptable->item(selectRow, i);
-            item->setFlags(item->flags() ^ Qt::ItemIsEditable);
-            item->setText(data.value(i));
-        }
-        return;
-    }
-    if(this->_ptable->item(selectRow, 0)->flags().testFlag(Qt::ItemIsEditable))
-    {
-        for(int i = 0; i < this->_ptable->columnCount()- 1; ++i)
-        {
-            QTableWidgetItem *item(this->_ptable->takeItem(selectRow, i));
-            item->setFlags(item->flags() ^ Qt::ItemIsSelectable);
-        }
-        this->_ptable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        this->_ptable->setSelectionBehavior(QAbstractItemView::SelectRows);
-        this->_ptable->setSelectionMode(QAbstractItemView::SingleSelection);
-        return;
-    }
-}
-
-void Widget::onClickedRedactSave()
-{
-    this->_service->clear();
-    this->_service->squeeze();
-    this->_specialist->clear();
-    this->_specialist->squeeze();
-    this->_cost->clear();
-    this->_cost->squeeze();
-    this->_time->clear();
-    this->_time->squeeze();
-    for(int i = 0; i < this->_service->size(); ++i)
-        this->_service->append(this->_ptable->item(i, 0)->text());
-    for(int i = 0; i < this->_specialist->size(); ++i)
-        this->_specialist->append(this->_ptable->item(i, 1)->text());
-    for(int i = 0; i < this->_cost->size(); ++i)
-         this->_cost->append(this->_ptable->item(i, 2)->text().toInt());
-    for(int i = 0; i < this->_time->size(); ++i)
-        this->_time->append(this->_ptable->item(i, 3)->text().toInt());
-    this->saveData();
-}
-
-void Widget::onClickedRedactCancel()
-{
     this->reloadTable();
 }
 
@@ -415,10 +405,7 @@ void Widget::loadTable()
     for(int i = 0; i < this->_cost->size(); ++i)
     {
         QTableWidgetItem *item = new QTableWidgetItem(QString::number(this->_cost->value(i)));
-
         this->_ptable->setItem(i, 2, item);
-//        item->setFlags(item->flags() ^ Qt::ItemIsSelectable);
-
     }
     for(int i = 0; i < this->_time->size(); ++i)
     {

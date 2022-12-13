@@ -1,6 +1,5 @@
 #ifndef WIDGET_H
 #define WIDGET_H
-#include <QDebug>
 
 #include <algorithm>
 #include <QWidget>
@@ -15,6 +14,9 @@
 #include <QHeaderView>
 #include <QPixmap>
 #include <QMessageBox>
+#include <QLabel>
+#include <QDir>
+#include <QFile>
 
 class Widget_GetPath;
 
@@ -27,6 +29,7 @@ class Widget : public QWidget
     QVBoxLayout *pvbxlayout;
     QHBoxLayout *phbxlayout1;
     QHBoxLayout *phbxlayout2;
+    QAction *pEditModeAction;
     QAction *pRmModeAction;
     QAction *pSaveModeAction;
     QAction *pClModeAction;
@@ -45,6 +48,7 @@ class Widget : public QWidget
     QList<int> *_time;
     QString _str_filter;
     int _index_filter;
+    QDialog *_pWgtOProgramme;
     void getData();
     void saveData();
     void loadTable();
@@ -66,14 +70,13 @@ protected slots:
     void onClickedBtnRm();
     void onClickedMenuSave();
     void onClickedMenuCl();
-    void onClickedRedactRow();
-    void onClickedRedactSave();
-    void onClickedRedactCancel();
     void onClick_find(const QString &str);
     void onClick_find_filter(int index);
     void onClickedSortBtnV();
     void onClickedSortBtnU();
     void sort(int index);
+    void onClickedOProgramme();
+    void onClickedCloseOProgramme();
 };
 
 class Widget_GetPath: public QWidget

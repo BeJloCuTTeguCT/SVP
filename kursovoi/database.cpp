@@ -1,10 +1,4 @@
 #include "database.h"
-#include <QJsonDocument>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QJsonValue>
-#include <QFile>
-#include <iostream>
 
 #define F_SERVICE "название услуги"
 #define F_SPECIALIST "название специалиста"
@@ -70,7 +64,6 @@ void Database::write_Database(QString path_database)
     for(int i = 0; i < this->_service->size(); ++i)
     {
         QJsonObject jObj;
-        QJsonValue jVal;
         jObj.insert(F_SERVICE, this->_service->value(i));
         jObj.insert(F_SPECIALIST, this->_specialist->value(i));
         jObj.insert(F_COST, this->_cost->value(i));
@@ -79,8 +72,7 @@ void Database::write_Database(QString path_database)
     }
     QJsonDocument JDoc;
     JDoc.setArray(jArr);
-    QFile file;
-    file.setFileName(path_database);
+    QFile file(path_database);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     file.write(JDoc.toJson());
     file.close();
