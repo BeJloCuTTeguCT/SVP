@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/images">
+        <file alias="saveICO">SaveICO.png</file>
+        <file alias="editICO">EditICO.ico</file>
+        <file alias="removeICO">RemoveICO.png</file>
+        <file alias="addICO">AddICO.ico</file>
+        <file alias="resetICO">resetICO.ico</file>
+    </qresource>
+    <qresource prefix="/database">
+        <file alias="database">database.json</file>
+    </qresource>
+</RCC>
